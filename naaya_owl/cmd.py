@@ -71,7 +71,7 @@ def main():
     link_path = path.join(config['output_root'], 'current')
 
     report_path_0 = report_path
-    n = 0
+    n = 1
     while path.isdir(report_path):
         report_path = report_path_0 + '-' + str(n)
         n += 1
