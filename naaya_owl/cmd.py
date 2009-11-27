@@ -84,6 +84,7 @@ def main():
     report_file = file(path.join(report_path, 'report.txt'), 'wb')
     handler2 = logging.StreamHandler(report_file)
     handler2.setLevel(logging.INFO)
+    handler2.setFormatter(logging.Formatter('[%(asctime)s] %(message)s'))
     log.addHandler(handler2)
 
     out = run_cmd('.', config['updatecmd'])
@@ -118,11 +119,55 @@ def main():
         if n_errors or n_failures:
             log.info('Tests failed: %d errors, %d failures',
                      n_errors, n_failures)
+            send_fail_mail(name, out)
         else:
             log.info('Tests successful')
 
     handler2.close()
     report_file.close()
+
+def send_fail_mail(name, out):
+    recipients = [
+        # enter mail addresses here
+    ]
+    subject = 'owl failure in %r' % name
+
+    mail = mail_sender('mail.eaudeweb.ro', 25)
+    try:
+        mail('Night Owl <alex.morega@eaudeweb.ro>',
+             recipients, subject, out)
+    except mail.RecipientsRefused, e:
+        log.error('SMTP recipients refused: %r', e.recipients)
+    except Exception, e:
+        log.error('SMTP error: %r', e)
+
+def mail_sender(host, port):
+    import smtplib
+    from email.mime.text import MIMEText
+
+    class RecipientsRefused(ValueError):
+        def __init__(self, recipients):
+            self.recipients = recipients
+
+    def send_mail(addr_from, addr_to_list, subject, body):
+        msg = MIMEText(body)
+        msg['From'] = addr_from
+        for addr_to in addr_to_list:
+            msg['To'] = addr_to
+        msg['Subject'] = subject
+
+        s = smtplib.SMTP(host, port)
+        try:
+            ret = s.sendmail(addr_from, addr_to_list, msg.as_string())
+        except SMTPRecipientsRefused, e:
+            ret = e.recipients
+        finally:
+            s.quit()
+        if ret:
+            raise RecipientsRefused(ret)
+
+    send_mail.RecipientsRefused = RecipientsRefused
+    return send_mail
 
 if __name__ == '__main__':
     main()
