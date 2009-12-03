@@ -110,6 +110,7 @@ def main():
                           out)
             if m is None:
                 log.error('unexpected output from test process')
+                send_fail_mail(name, out)
                 continue
 
         n_tests = int(m.group('tests'))
