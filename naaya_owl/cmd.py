@@ -87,6 +87,19 @@ def main():
     handler2.setFormatter(logging.Formatter('[%(asctime)s] %(message)s'))
     log.addHandler(handler2)
 
+    def send_fail_mail(name, output):
+        recipients = map(str.strip, config['error_emails'].strip().split('\n'))
+        subject = 'owl failure in %r' % name
+
+        mail = mail_sender('mail.eaudeweb.ro', 25)
+        try:
+            mail('Night Owl <alex.morega@eaudeweb.ro>',
+                 recipients, subject, output)
+        except mail.RecipientsRefused, e:
+            log.error('SMTP recipients refused: %r', e.recipients)
+        except Exception, e:
+            log.error('SMTP error: %r', e)
+
     out = run_cmd('.', config['updatecmd'])
     with open(path.join(report_path, 'update.txt'), 'wb') as f:
         f.write(out)
@@ -126,21 +139,6 @@ def main():
 
     handler2.close()
     report_file.close()
-
-def send_fail_mail(name, out):
-    recipients = [
-        # enter mail addresses here
-    ]
-    subject = 'owl failure in %r' % name
-
-    mail = mail_sender('mail.eaudeweb.ro', 25)
-    try:
-        mail('Night Owl <alex.morega@eaudeweb.ro>',
-             recipients, subject, out)
-    except mail.RecipientsRefused, e:
-        log.error('SMTP recipients refused: %r', e.recipients)
-    except Exception, e:
-        log.error('SMTP error: %r', e)
 
 def mail_sender(host, port):
     import smtplib
