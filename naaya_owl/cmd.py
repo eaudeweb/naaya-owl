@@ -134,6 +134,9 @@ def main():
             log.info('Tests failed: %d errors, %d failures',
                      n_errors, n_failures)
             send_fail_mail(name, out)
+        elif 'Test-module import failures' in out:
+            log.info('Import errors in tests')
+            send_fail_mail(name, out)
         else:
             log.info('Tests successful')
 
