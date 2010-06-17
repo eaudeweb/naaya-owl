@@ -94,7 +94,7 @@ def main():
         mail = mail_sender('mail.eaudeweb.ro', 25)
         try:
             mail('Night Owl <alex.morega@eaudeweb.ro>',
-                 recipients, subject, output)
+                 recipients, subject, output, include_owl=True)
         except mail.RecipientsRefused, e:
             log.error('SMTP recipients refused: %r', e.recipients)
         except Exception, e:
@@ -152,23 +152,33 @@ def main():
 
 def mail_sender(host, port):
     import smtplib
+    from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
+    from email.mime.image import MIMEImage
 
     class RecipientsRefused(ValueError):
         def __init__(self, recipients):
             self.recipients = recipients
 
-    def send_mail(addr_from, addr_to_list, subject, body):
-        msg = MIMEText(body)
+    def send_mail(addr_from, addr_to_list, subject, body, include_owl=False):
+        msg = MIMEMultipart()
         msg['From'] = addr_from
         for addr_to in addr_to_list:
             msg['To'] = addr_to
         msg['Subject'] = subject
 
+        if include_owl:
+            owl_file_path = path.join(path.dirname(__file__), 'owl.jpg')
+            with open(owl_file_path, 'rb') as owl_file:
+                msg.attach(MIMEImage(owl_file.read()))
+            body = '\n\n' + body
+
+        msg.attach(MIMEText(body))
+
         s = smtplib.SMTP(host, port)
         try:
             ret = s.sendmail(addr_from, addr_to_list, msg.as_string())
-        except SMTPRecipientsRefused, e:
+        except smtplib.SMTPRecipientsRefused, e:
             ret = e.recipients
         finally:
             s.quit()
@@ -177,6 +187,11 @@ def mail_sender(host, port):
 
     send_mail.RecipientsRefused = RecipientsRefused
     return send_mail
+
+def test_mail(addr_to):
+    send_mail = mail_sender('mail.eaudeweb.ro', 25)
+    send_mail('Night Owl <alex.morega@eaudeweb.ro>', [addr_to],
+              'hello world', 'the error text', include_owl=True)
 
 if __name__ == '__main__':
     main()
