@@ -105,6 +105,13 @@ def main():
         f.write(out)
 
     for name, options in config['buildouts']:
+        if 'pre_test' in options:
+            log.info('updating %r', name)
+            pre_test_out = run_cmd(options['path'], options['pre_test'])
+            p = path.join(report_path, name+'_pre_test_out.txt')
+            with open(p, 'wb') as f:
+                f.write(p)
+
         log.info('running tests for %r', name)
 
         out = run_cmd(options['path'], options['testcmd'])
