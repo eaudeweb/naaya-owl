@@ -14,6 +14,8 @@ parser.add_option("-v", "--verbose",
                   action="store_const", const=logging.DEBUG, dest="loglevel")
 parser.add_option("-q", "--quiet",
                   action="store_const", const=logging.CRITICAL, dest="loglevel")
+parser.add_option("-n", "--no-mail",
+                  action="store_false", dest="send_mail", default=True)
 parser.set_defaults(loglevel=logging.INFO)
 
 log = logging.getLogger('nyowl')
@@ -48,7 +50,7 @@ def run_cmd(path, cmd):
     return out
 
 def main():
-    options, args = parser.parse_args()
+    cmd_options, args = parser.parse_args()
 
     if len(args) == 0:
         config_path = path.join(sys.prefix, 'owl.cfg')
@@ -58,7 +60,7 @@ def main():
         return parser.print_usage()
 
     handler = logging.StreamHandler()
-    handler.setLevel(options.loglevel)
+    handler.setLevel(cmd_options.loglevel)
     log.addHandler(handler)
 
     config = dict(parse_config(config_path))
@@ -88,6 +90,8 @@ def main():
     log.addHandler(handler2)
 
     def send_fail_mail(name, output):
+        if not cmd_options.send_mail:
+            return
         recipients = map(str.strip, config['error_emails'].strip().split('\n'))
         subject = 'owl failure in %r' % name
 
