@@ -122,34 +122,22 @@ def main():
         with open(path.join(report_path, name+'_out.txt'), 'wb') as f:
             f.write(out)
 
-        m = re.search(r'Total: (?P<tests>\d*) tests, '
-                      r'(?P<failures>\d*) failures, '
-                      r'(?P<errors>\d*) errors\s*$',
-                      out)
+        m = re.search(r'Ran (?P<tests>\d+) tests in [\d\.]+s\s+'
+                      r'(?P<result>OK|FAILED)', out)
 
         if m is None:
-            m = re.search(r'Ran (?P<tests>\d*) tests with '
-                          r'(?P<failures>\d*) failures and '
-                          r'(?P<errors>\d*) errors in \d*\.?\d* seconds\.',
-                          out)
-            if m is None:
-                log.error('unexpected output from test process')
-                send_fail_mail(name, out)
-                continue
+            log.error('unexpected output from test process')
+            send_fail_mail(name, out)
+            continue
 
         n_tests = int(m.group('tests'))
-        n_failures = int(m.group('failures'))
-        n_errors = int(m.group('errors'))
+        success = {'OK': True, 'FAILED': False}.get(m.group('result'))
 
-        if n_errors or n_failures:
-            log.info('Tests failed: %d errors, %d failures',
-                     n_errors, n_failures)
-            send_fail_mail(name, out)
-        elif 'Test-module import failures' in out:
-            log.info('Import errors in tests')
-            send_fail_mail(name, out)
-        else:
+        if success:
             log.info('Tests successful')
+        else:
+            log.info('Tests failed')
+            send_fail_mail(name, out)
 
     handler2.close()
     report_file.close()
